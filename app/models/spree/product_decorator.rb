@@ -129,7 +129,7 @@ module Spree
         # taxon and property filters have an effect on the facets
         and_filter << { terms: { taxon_ids: taxons } } unless taxons.empty?
         # only return products that are available
-        and_filter << { range: { available_on: { lte: "now" } } }
+        #and_filter << { range: { available_on: { lte: "now" } } }
         result[:query][:filtered][:filter] = { "and" => and_filter } unless and_filter.empty?
 
         # add price filter outside the query because it should have no effect on facets
