@@ -19,6 +19,10 @@ module Spree
       indexes :properties, type: 'string', index: 'not_analyzed'
     end
 
+    mapping do
+      indexes :name_suggest, type: 'completion', payloads:true
+    end
+
     def as_indexed_json(options={})
       result = as_json({
         methods: [:price, :sku],
@@ -36,6 +40,13 @@ module Spree
       })
       result[:properties] = property_list unless property_list.empty?
       result[:taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:id) unless taxons.empty?
+      #result[:name_suggest] = {input: name, output: name, payload: {url: "/articles/foo"}}
+      # as_json.merge \
+      # name_suggest: {
+      #     input:  :name,
+      #     output: :name,
+      #     payload: { url: "/articles/foo" }
+      # }
       result
     end
 
@@ -54,6 +65,7 @@ module Spree
       attribute :query, String
       attribute :taxons, Array
       attribute :browse_mode, Boolean
+      attribute :available_by_max_no_days, Integer
       attribute :sorting, String
 
       # When browse_mode is enabled, the taxon filter is placed at top level. This causes the results to be limited, but facetting is done on the complete dataset.
@@ -133,10 +145,22 @@ module Spree
         result[:query][:filtered][:query] = query
         # taxon and property filters have an effect on the facets
         and_filter << { terms: { taxon_ids: taxons } } unless taxons.empty?
+<<<<<<< e0b2992eb1d39abf315fcc5605f46c763b342509
         # only return products that are available
         #and_filter << { range: { available_on: { lte: "now" } }
         and_filter << { range: { available_on: { lte: 'now' } } }
         result[:query][:filtered][:filter] = { and: and_filter } unless and_filter.empty?
+=======
+        if available_by_max_no_days.nil?
+          # only return products that are available
+          and_filter << { range: { available_on: { lte: Date.today } } }
+        else
+          # for the 'new' category we limit the display of products to those number of days
+          # configured @ configatron.frontend.homepage.available_by_max_no_days
+          and_filter << { range: { available_on: { lte: Date.today, gte: Date.today - available_by_max_no_days.days } } }
+        end
+
+>>>>>>> changes to raneg query for 'new' category.
         result[:query][:filtered][:filter] = { "and" => and_filter } unless and_filter.empty?
 
         # add price filter outside the query because it should have no effect on facets
