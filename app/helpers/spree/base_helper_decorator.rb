@@ -42,8 +42,8 @@ module Spree
       delete_keys = []
       facets.map do |key, facet|
         if key == "properties"
-          new_facets.merge! expand_properties_facet_to_facet_array(facet)
-          delete_keys << :properties
+          #new_facets.merge! expand_properties_facet_to_facet_array(facet)
+          #delete_keys << :properties
         else
           facet
         end
