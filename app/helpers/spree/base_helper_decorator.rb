@@ -43,6 +43,8 @@ module Spree
         if key == 'properties'
           new_aggregations.merge! expand_properties_aggregation_to_aggregation_array(aggregation)
           delete_keys << :properties
+          #new_facets.merge! expand_properties_facet_to_facet_array(facet)
+          #delete_keys << :properties
         else
           aggregation
         end
