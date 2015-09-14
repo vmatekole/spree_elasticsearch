@@ -16,14 +16,22 @@ module Spree
       indexes :sku, type: 'string', index: 'not_analyzed'
       indexes :taxon_ids, type: 'string', index: 'not_analyzed'
       indexes :properties, type: 'string', index: 'not_analyzed'
+      indexes :clp_image_path, type: 'string', index: 'not_analyzed'
     end
 
     mapping do
       indexes :name_suggest, type: 'completion', payloads:true
     end
 
+    def clp_image_path
+      if images.size > 0
+        return images.first.attachment.url(:clp_small)
+      end
+    end
+
     def as_indexed_json(options={})
-      result = as_json({
+
+        result = as_json({
         methods: [:price, :sku],
         only: [:available_on, :description, :name],
         include: {
@@ -37,8 +45,9 @@ module Spree
           }
         }
       })
+      result[:clp_image_path] = clp_image_path
       result[:properties] = property_list unless property_list.empty?
-      result[:taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:id) unless taxons.empty?
+      result[:taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:id) unless taxons.empty?      
       #result[:name_suggest] = {input: name, output: name, payload: {url: "/articles/foo"}}
       # as_json.merge \
       # name_suggest: {
