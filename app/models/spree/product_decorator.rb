@@ -7,7 +7,7 @@ module Spree
 
     mapping _all: {"index_analyzer" => "nGram_analyzer", "search_analyzer" => "whitespace_analyzer"} do
       indexes :name, type: 'multi_field' do
-        indexes :name, type: 'string', analyzer: 'nGram_analyzer', boost: 100
+        indexes :name, type: 'string', analyzer: 'snowball'
         indexes :untouched, type: 'string', include_in_all: false, index: 'not_analyzed'
       end
       indexes :description, analyzer: 'snowball'
@@ -113,8 +113,7 @@ module Spree
             and_filter << { terms: { properties: pair.map {|prop| prop.join("||")} } }
           end
         end
-
-        sorting = case @sorting
+        sorting = case @sorting          
         when "name_asc"
           [ {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }}, "_score" ]
         when "name_desc"
@@ -164,7 +163,6 @@ module Spree
         if price_min && price_max && (price_min < price_max)
           result[:filter] = { range: { price: { gte: price_min, lte: price_max } } }
         end
-
         result
       end
     end
