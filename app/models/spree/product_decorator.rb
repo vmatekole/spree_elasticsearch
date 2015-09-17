@@ -7,7 +7,7 @@ module Spree
 
     mapping _all: { analyzer: 'nGram_analyzer', search_analyzer: 'whitespace_analyzer' } do
       indexes :name, type: 'multi_field' do
-        indexes :name, type: 'string', analyzer: 'nGram_analyzer', boost: 100
+        indexes :name, type: 'string', analyzer: 'snowball'
         indexes :untouched, type: 'string', include_in_all: false, index: 'not_analyzed'
       end
 
@@ -118,6 +118,7 @@ module Spree
             and_filter << { terms: { properties: pair.map { |property| property.join('||') } } }
           end
         end
+<<<<<<< 0aa8fbae9b4b80b191f36bb9a34c9a1f4c0c65cb
 
         sorting = case @sorting
         when 'name_asc'
@@ -130,6 +131,19 @@ module Spree
           [ { 'price' => { order: 'desc' } }, { 'name.untouched' => { order: 'asc' } }, '_score' ]
         when 'score'
           [ '_score', { 'name.untouched' => { order: 'asc' } }, { price: { order: 'asc' } } ]
+=======
+        sorting = case @sorting          
+        when "name_asc"
+          [ {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }}, "_score" ]
+        when "name_desc"
+          [ {"name.untouched" => { order: "desc" }}, {"price" => { order: "asc" }}, "_score" ]
+        when "price_asc"
+          [ {"price" => { order: "asc" }}, {"name.untouched" => { order: "asc" }}, "_score" ]
+        when "price_desc"
+          [ {"price" => { order: "desc" }}, {"name.untouched" => { order: "asc" }}, "_score" ]
+        when "score"
+          [ "_score", {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }} ]
+>>>>>>> change analyzer for product name
         else
           [ { 'name.untouched' => { order: 'asc' } }, { price: { order: 'asc' } }, '_score' ]
         end
@@ -176,7 +190,6 @@ module Spree
         if price_min && price_max && (price_min < price_max)
           result[:filter] = { range: { price: { gte: price_min, lte: price_max } } }
         end
-
         result
       end
     end
