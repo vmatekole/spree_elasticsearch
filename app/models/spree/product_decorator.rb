@@ -48,7 +48,10 @@ module Spree
       })
       result[:clp_image_path] = clp_image_path
       result[:properties] = property_list unless property_list.empty?
-      result[:taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:id) unless taxons.empty?      
+      result[:taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:id) unless taxons.empty?
+      result[:taxonomies] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:taxonomy_id) unless taxons.empty?
+      # result[:taxonomies] = taxonomies unless taxonomies.empty?
+
       #result[:name_suggest] = {input: name, output: name, payload: {url: "/articles/foo"}}
       # as_json.merge \
       # name_suggest: {
