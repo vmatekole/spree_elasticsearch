@@ -49,7 +49,7 @@ module Spree
       result[:clp_image_path] = clp_image_path
       result[:properties] = property_list unless property_list.empty?
       result[:taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:id) unless taxons.empty?
-      result[:taxonomies] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:taxonomy_id) unless taxons.empty?
+      result[:root_taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:taxonomy_id).uniq unless taxons.empty?
       # result[:taxonomies] = taxonomies unless taxonomies.empty?
 
       #result[:name_suggest] = {input: name, output: name, payload: {url: "/articles/foo"}}
@@ -76,6 +76,7 @@ module Spree
       attribute :properties, Hash
       attribute :query, String
       attribute :taxons, Array
+      attribute :root_taxon_ids, Array
       attribute :browse_mode, Boolean
       attribute :available_by_max_no_days, Integer
       attribute :sorting, String
@@ -170,6 +171,7 @@ module Spree
         # add query and filters to filtered
         result[:query][:filtered][:query] = query
         # taxon and property filters have an effect on the facets
+<<<<<<< 0db22c69caa617cd060e928329fcbee0e9f45d34
         and_filter << { terms: { taxon_ids: taxons } } unless taxons.empty?
 <<<<<<< e0b2992eb1d39abf315fcc5605f46c763b342509
         # only return products that are available
@@ -177,6 +179,11 @@ module Spree
         and_filter << { range: { available_on: { lte: 'now' } } }
         result[:query][:filtered][:filter] = { and: and_filter } unless and_filter.empty?
 =======
+=======
+        and_filter << { terms: { taxon_ids: taxons } } if not taxons.empty? and @root_taxon_ids.empty?
+        # Gift finder search
+        and_filter << { terms: { root_taxon_ids: @root_taxon_ids } } unless @root_taxon_ids.empty?
+>>>>>>> support gift finder search
         if available_by_max_no_days.nil?
           # only return products that are available
           and_filter << { range: { available_on: { lte: Date.today } } }
