@@ -14,6 +14,7 @@ module Spree
       indexes :available_on, type: 'date', format: 'dateOptionalTime', include_in_all: false
       indexes :price, type: 'double'
       indexes :sku, type: 'string', index: 'not_analyzed'
+      indexes :slug, type: 'string', index: 'not_analyzed'
       indexes :taxon_ids, type: 'string', index: 'not_analyzed'
       indexes :properties, type: 'string', index: 'not_analyzed'
       indexes :clp_image_path, type: 'string', index: 'not_analyzed'
@@ -45,10 +46,11 @@ module Spree
           }
         }
       })
+      result[:slug] = slug
       result[:clp_image_path] = clp_image_path
       result[:properties] = property_list unless property_list.empty?
       result[:taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:id) unless taxons.empty?
-      result[:root_taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:taxonomy_id).uniq unless taxons.empty?
+      #result[:root_taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:taxonomy_id).uniq unless taxons.empty?
       # result[:taxonomies] = taxonomies unless taxonomies.empty?
 
       #result[:name_suggest] = {input: name, output: name, payload: {url: "/articles/foo"}}
