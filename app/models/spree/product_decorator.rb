@@ -31,8 +31,27 @@ module Spree
       end
     end
 
-    def as_indexed_json(options={})
+    def select_taxon_name(taxon_ids)
+      return nil unless taxon_ids
+      taxons = Spree::Taxon.find(taxon_ids)
+      selected_taxons = taxons.select{|t|t.depth > 0}
+      selected_taxons.sample.permalink.upcase.gsub("/", " // ")
+    end
 
+    def tokenize_name(name)
+      single_words = name.split(/[\W+\s+\b]/)
+      concat_word = single_words[0] + " "
+      input = single_words.clone
+      single_words.each_with_index do |n,i|
+        if i < single_words.length - 1
+          input.push(concat_word.clone)
+          concat_word.concat(single_words[i + 1]).concat(" ")
+        end
+      end
+      input
+    end
+
+    def as_indexed_json(options={})
         result = as_json({
         methods: [:price, :sku],
         only: [:available_on, :description, :name],
@@ -51,16 +70,19 @@ module Spree
       result[:clp_image_path] = clp_image_path
       result[:properties] = property_list unless property_list.empty?
       result[:taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:id) unless taxons.empty?
-      #result[:root_taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:taxonomy_id).uniq unless taxons.empty?
-      # result[:taxonomies] = taxonomies unless taxonomies.empty?
-
-      #result[:name_suggest] = {input: name, output: name, payload: {url: "/articles/foo"}}
-      # as_json.merge \
-      # name_suggest: {
-      #     input:  :name,
-      #     output: :name,
-      #     payload: { url: "/articles/foo" }
-      # }
+      keywords = []
+      keywords = meta_keywords.split(/[\W+\s+\b]/)if meta_keywords
+      result[:name_suggest] = {
+            input: tokenize_name(name).append(keywords),
+            output: name,
+            payload: {
+              suggest: {
+                id: id,
+                name: name,
+                category: select_taxon_name(result[:taxon_ids])
+              }
+            }
+        }
       result
     end
 
@@ -124,6 +146,7 @@ module Spree
             and_filter << { terms: { properties: pair.map { |property| property.join('||') } } }
           end
         end
+<<<<<<< a77ea32eba2ac7890fbb6000bb4f91dac48ab322
 <<<<<<< 0aa8fbae9b4b80b191f36bb9a34c9a1f4c0c65cb
 
         sorting = case @sorting
@@ -139,6 +162,9 @@ module Spree
           [ '_score', { 'name.untouched' => { order: 'asc' } }, { price: { order: 'asc' } } ]
 =======
         sorting = case @sorting          
+=======
+        sorting = case @sorting
+>>>>>>> finalisinh search suggestion funtionality
         when "name_asc"
           [ {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }}, "_score" ]
         when "name_desc"
