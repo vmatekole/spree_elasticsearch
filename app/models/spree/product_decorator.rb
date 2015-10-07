@@ -34,9 +34,9 @@ module Spree
       return nil unless taxon_ids
       taxons = Spree::Taxon.find(taxon_ids)
       selected_taxons = taxons.select{|t|t.depth > 0}
-      t = selected_taxons.sample.permalink
-      if t and defined?(t.permalink) and t.permalink.blank?
-        t.permalink.upcase.gsub("/", " // ")
+      permalink = selected_taxons.sample.permalink
+      unless permalink.blank?
+        permalink.upcase.gsub("/", " // ")
       end
     end
 
