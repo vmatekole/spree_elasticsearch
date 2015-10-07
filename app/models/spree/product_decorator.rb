@@ -35,7 +35,10 @@ module Spree
       return nil unless taxon_ids
       taxons = Spree::Taxon.find(taxon_ids)
       selected_taxons = taxons.select{|t|t.depth > 0}
-      selected_taxons.sample.permalink.upcase.gsub("/", " // ")
+      t = selected_taxons.sample.permalink
+      if t and defined?(t.permalink)
+        t.permalink.upcase.gsub("/", " // ")
+      end
     end
 
     def tokenize_name(name)
