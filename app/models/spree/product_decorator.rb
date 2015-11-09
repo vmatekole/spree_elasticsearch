@@ -17,16 +17,25 @@ module Spree
       indexes :slug, type: 'string', index: 'not_analyzed'
       indexes :taxon_ids, type: 'string', index: 'not_analyzed'
       indexes :properties, type: 'string', index: 'not_analyzed'
-      indexes :clp_image_path, type: 'string', index: 'not_analyzed'
     end
 
     mapping do
       indexes :name_suggest, type: 'completion', payloads:true
     end
 
-    def clp_image_path
+    def clp_image_url
       if images.size > 0
         return images.first.attachment.url(:clp_small)
+      end
+    end
+
+    def hover_image_url
+      image = images.find{|i| i.hover}
+      if image
+        # options.reverse_merge!(alt: image.alt.blank? ? product.name : image.alt)
+        image.attachment.url(:clp_small)
+      else
+        ""
       end
     end
 
@@ -71,7 +80,9 @@ module Spree
         }
       })
       result[:slug] = slug
-      result[:clp_image_path] = clp_image_path
+      result[:clp_image_url] = clp_image_url
+      result[:hover_image_url] = hover_image_url
+      #result[:clp_hover_url] = clp_hover_url
       result[:properties] = property_list unless property_list.empty?
       result[:taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:id) unless taxons.empty?
       keywords = []
