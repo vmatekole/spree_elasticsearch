@@ -36,7 +36,7 @@ module Spree
             sorting: sorting
           ).to_hash
         )
-        search_result.limit(10000000).page(page).records
+        search_result.limit(12).page(page).records
       end
 
       protected

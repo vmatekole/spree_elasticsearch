@@ -23,6 +23,7 @@ module Spree
       indexes :name_suggest, type: 'completion', payloads:true
     end
 
+
     def clp_image_url
       if images.size > 0
         return images.first.attachment.url(:clp_small)
@@ -64,9 +65,17 @@ module Spree
       input
     end
 
+    def price_inc_tax 
+      rate = tax_category.tax_rates.first.amount if tax_category.tax_rates.any?
+      if tax_category.tax_code == configatron.taxes.code.no_vat
+        rate = 0.00
+      end
+      price_including_tax = price.to_f * (1 + rate)
+  end 
+
     def as_indexed_json(options={})
         result = as_json({
-        methods: [:price, :sku],
+        methods: [:price,:sku],
         only: [:available_on, :description, :name],
         include: {
           variants: {
@@ -79,6 +88,7 @@ module Spree
           }
         }
       })
+      result[:price] = price_inc_tax
       result[:slug] = slug
       result[:clp_image_url] = clp_image_url
       result[:hover_image_url] = hover_image_url
