@@ -24,8 +24,7 @@ module Spree
 
       def retrieve_products
         from = (@page - 1) * Spree::Config.products_per_page
-        search_result = Spree::Product.__elasticsearch__.search(
-          Spree::Product::ElasticsearchQuery.new(
+        q = {
             query: query,
             taxons: taxons,
             browse_mode: browse_mode,
@@ -34,9 +33,11 @@ module Spree
             price_max: price_max,
             properties: properties,
             sorting: sorting
-          ).to_hash
+        }
+        search_result = Spree::Product.__elasticsearch__.search(
+              Spree::Product::ElasticsearchQuery.new(q).to_hash
         )
-        search_result.limit(12).page(page).records
+        search_result.limit(Spree::Config.products_per_page).page(page).records
       end
 
       protected
@@ -54,7 +55,6 @@ module Spree
           # properties
           @properties = params[:search][:properties]
         end
-
         @per_page = (params[:per_page].to_i <= 0) ? Spree::Config[:products_per_page] : params[:per_page].to_i
         @page = (params[:page].to_i <= 0) ? 1 : params[:page].to_i
       end
