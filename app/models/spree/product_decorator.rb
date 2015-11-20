@@ -104,7 +104,8 @@ module Spree
               suggest: {
                 id: id,
                 name: name,
-                category: select_taxon_name(result[:taxon_ids])
+                category: select_taxon_name(result[:taxon_ids]),
+                available_on: available_on
               }
             }
         }
