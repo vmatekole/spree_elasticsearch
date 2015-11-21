@@ -237,8 +237,12 @@ module Spree
 =======
         and_filter << { terms: { taxon_ids: taxons } } if not taxons.empty? and @root_taxon_ids.empty?
         # Gift finder search
+<<<<<<< 1b298db7c26674123ed7d7e6db187eea4c054617
         and_filter << { terms: { root_taxon_ids: @root_taxon_ids } } unless @root_taxon_ids.empty?
 >>>>>>> support gift finder search
+=======
+        # and_filter << { terms: { root_taxon_ids: @root_taxon_ids } } unless @root_taxon_ids.empty?
+>>>>>>> support for better term search
         if available_by_max_no_days.nil?
           # only return products that are available
           and_filter << { range: { available_on: { lte: Date.today } } }
@@ -250,6 +254,77 @@ module Spree
 
 >>>>>>> changes to raneg query for 'new' category.
         result[:query][:filtered][:filter] = { "and" => and_filter } unless and_filter.empty?
+
+        # add price filter outside the query because it should have no effect on facets
+        if price_min && price_max && (price_min < price_max)
+          result[:filter] = { range: { price: { gte: price_min, lte: price_max } } }
+        end
+        result
+      end
+
+      def to_query_hash
+        q = { match_all: {} }
+        unless query.blank? # nil or empty
+          q = { query_string: { query: query, fields: ['name','sku']} }
+        end
+        query = q
+
+        and_filter = []
+        unless @properties.nil? || @properties.empty?
+          # transform properties from [{"key1" => ["value_a","value_b"]},{"key2" => ["value_a"]}
+          # to { terms: { properties: ["key1||value_a","key1||value_b"] }
+          #    { terms: { properties: ["key2||value_a"] }
+          # This enforces "and" relation between different property values and "or" relation between same property values
+          properties = @properties.map {|k,v| [k].product(v)}.map do |pair|
+            and_filter << { terms: { properties: pair.map {|prop| prop.join("||")} } }
+          end
+        end
+        sorting = case @sorting
+        when "name_asc"
+          [ {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }}, "_score" ]
+        when "name_desc"
+          [ {"name.untouched" => { order: "desc" }}, {"price" => { order: "asc" }}, "_score" ]
+        when "price_asc"
+          [ {"price" => { order: "asc" }}, {"name.untouched" => { order: "asc" }}, "_score" ]
+        when "price_desc"
+          [ {"price" => { order: "desc" }}, {"name.untouched" => { order: "asc" }}, "_score" ]
+        when "score"
+          [ "_score", {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }} ]
+        else
+          [ {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }}, "_score" ]
+        end
+
+        # facets
+        facets = {
+          price: { statistical: { field: "price" } },
+          properties: { terms: { field: "properties", order: "count", size: 1000000 } },
+          taxon_ids: { terms: { field: "taxon_ids", size: 1000000 } }
+        }
+
+        # basic skeleton
+        result = {
+          min_score: 0.1,
+          query: {filter:{}},
+          sort: sorting,
+          from: from,
+          facets: facets 
+        }
+        # add query and filters to filtered
+        result[:query] = query
+        # taxon and property filters have an effect on the facets
+        and_filter << { terms: { taxon_ids: taxons } } if not taxons.empty? and @root_taxon_ids.empty?
+        # Gift finder search
+        # and_filter << { terms: { root_taxon_ids: @root_taxon_ids } } unless @root_taxon_ids.empty?
+        if available_by_max_no_days.nil?
+          # only return products that are available
+          and_filter << { range: { available_on: { lte: Date.today } } }
+        else
+          # for the 'new' category we limit the display of products to those number of days
+          # configured @ configatron.frontend.homepage.available_by_max_no_days
+          and_filter << { range: { available_on: { lte: Date.today, gte: Date.today - available_by_max_no_days.days } } }
+        end
+
+        result[:filter] = { "and" => and_filter } unless and_filter.empty?
 
         # add price filter outside the query because it should have no effect on facets
         if price_min && price_max && (price_min < price_max)

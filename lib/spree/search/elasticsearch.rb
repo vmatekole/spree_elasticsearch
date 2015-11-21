@@ -40,6 +40,24 @@ module Spree
         search_result.limit(Spree::Config.products_per_page).page(page).records
       end
 
+      def query_products
+        from = (@page - 1) * Spree::Config.products_per_page
+        q = {
+            query: query,
+            taxons: taxons,
+            browse_mode: browse_mode,
+            from: from,
+            price_min: price_min,
+            price_max: price_max,
+            properties: properties,
+            sorting: sorting
+        }
+        search_result = Spree::Product.__elasticsearch__.search(
+              Spree::Product::ElasticsearchQuery.new(q).to_query_hash
+        )
+        search_result.limit(Spree::Config.products_per_page).page(page).records
+      end
+
       protected
 
       # converts params to instance variables
