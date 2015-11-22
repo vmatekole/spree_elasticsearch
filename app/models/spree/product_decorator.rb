@@ -63,15 +63,7 @@ module Spree
         end
       end
       input
-    end
-
-    def price_inc_tax 
-      rate = tax_category.tax_rates.first.amount if tax_category.tax_rates.any?
-      if tax_category.tax_code == configatron.taxes.code.no_vat
-        rate = 0.00
-      end
-      price_including_tax = price.to_f * (1 + rate)
-  end 
+    end 
 
     def as_indexed_json(options={})
         result = as_json({
@@ -88,7 +80,7 @@ module Spree
           }
         }
       })
-      result[:price] = price_inc_tax
+      result[:price] = price
       result[:slug] = slug
       result[:clp_image_url] = clp_image_url
       result[:hover_image_url] = hover_image_url
