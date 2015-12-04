@@ -63,7 +63,7 @@ module Spree
         end
       end
       input
-    end 
+    end
 
     def as_indexed_json(options={})
         result = as_json({
@@ -260,12 +260,12 @@ module Spree
           query: {filter:{}},
           sort: sorting,
           from: from,
-          facets: facets 
+          facets: facets
         }
         # add query and filters to filtered
         result[:query] = query
         # taxon and property filters have an effect on the facets
-        and_filter << { terms: { taxon_ids: taxons } } if not taxons.empty? and @root_taxon_ids.empty?
+        and_filter << { terms: { taxon_ids: taxons } } if not taxons.empty?
         # Gift finder search
         # and_filter << { terms: { root_taxon_ids: @root_taxon_ids } } unless @root_taxon_ids.empty?
         if available_by_max_no_days.nil?

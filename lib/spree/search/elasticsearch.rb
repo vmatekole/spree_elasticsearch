@@ -22,8 +22,14 @@ module Spree
         prepare(params)
       end
 
-      def retrieve_products
-        from = (@page - 1) * Spree::Config.products_per_page
+      def retrieve_products(params = {})
+        if @page == 1
+          products_per_page = 36
+        else
+          products_per_page = Spree::Config.products_per_page
+        end
+        from = (@page - 1) * products_per_page
+        from += 36
         q = {
             query: query,
             taxons: taxons,
@@ -34,10 +40,11 @@ module Spree
             properties: properties,
             sorting: sorting
         }
+        q[:available_by_max_no_of_days] = true if params.has_key?(:new_category)
         search_result = Spree::Product.__elasticsearch__.search(
               Spree::Product::ElasticsearchQuery.new(q).to_hash
         )
-        search_result.limit(Spree::Config.products_per_page).page(page).records
+        search_result.limit(products_per_page).page(page).records
       end
 
       def query_products
@@ -45,7 +52,7 @@ module Spree
         q = {
             query: query,
             taxons: taxons,
-            browse_mode: browse_mode,
+            browse_mode: true,
             from: from,
             price_min: price_min,
             price_max: price_max,
