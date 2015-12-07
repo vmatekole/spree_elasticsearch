@@ -23,44 +23,38 @@ module Spree
       end
 
       def retrieve_products(params = {})
-        if @page == 1
-          products_per_page = 36
-        else
-          products_per_page = Spree::Config.products_per_page
-        end
-        from = (@page - 1) * products_per_page
-        from += 36
+        from = (@page - 1) * Spree::Config.products_per_page
         q = {
-            query: query,
-            taxons: taxons,
-            browse_mode: browse_mode,
-            from: from,
-            price_min: price_min,
-            price_max: price_max,
-            properties: properties,
-            sorting: sorting
+          query: query,
+          taxons: taxons,
+          browse_mode: browse_mode,
+          from: from,
+          price_min: price_min,
+          price_max: price_max,
+          properties: properties,
+          sorting: sorting
         }
         q[:available_by_max_no_of_days] = true if params.has_key?(:new_category)
         search_result = Spree::Product.__elasticsearch__.search(
-              Spree::Product::ElasticsearchQuery.new(q).to_hash
-        )
-        search_result.limit(products_per_page).page(page).records
+          Spree::Product::ElasticsearchQuery.new(q).to_hash
+          )
+        search_result.limit(Spree::Config.products_per_page).page(page).records
       end
 
-      def query_products
+      def query_products        
         from = (@page - 1) * Spree::Config.products_per_page
         q = {
-            query: query,
-            taxons: taxons,
-            browse_mode: true,
-            from: from,
-            price_min: price_min,
-            price_max: price_max,
-            properties: properties,
-            sorting: sorting
+          query: query,
+          taxons: taxons,
+          browse_mode: true,
+          from: from,
+          price_min: price_min,
+          price_max: price_max,
+          properties: properties,
+          sorting: sorting
         }
         search_result = Spree::Product.__elasticsearch__.search(
-              Spree::Product::ElasticsearchQuery.new(q).to_query_hash
+          Spree::Product::ElasticsearchQuery.new(q).to_query_hash
         )
         search_result.limit(Spree::Config.products_per_page).page(page).records
       end
