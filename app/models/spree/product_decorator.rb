@@ -23,23 +23,6 @@ module Spree
       indexes :name_suggest, type: 'completion', payloads:true
     end
 
-
-    def clp_image_url
-      if images.size > 0
-        return images.first.attachment.url(:clp_small)
-      end
-    end
-
-    def hover_image_url
-      image = images.find{|i| i.hover}
-      if image
-        # options.reverse_merge!(alt: image.alt.blank? ? product.name : image.alt)
-        image.attachment.url(:clp_small)
-      else
-        ""
-      end
-    end
-
     def select_taxon_name(taxon_ids)
       return nil unless taxon_ids
       taxons = Spree::Taxon.find(taxon_ids)
@@ -285,6 +268,17 @@ module Spree
         end
         result
       end
+    end
+
+    def clp_image_url
+      if images.size > 0
+        return images.first.attachment.url(:clp_small)
+      end
+    end
+
+    def hover_image_url
+      image = images.find{|i| i.hover}
+      image.attachment.url(:clp_small) if image
     end
 
     private
