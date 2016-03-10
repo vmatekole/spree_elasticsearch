@@ -38,7 +38,11 @@ module Spree
         search_result = Spree::Product.__elasticsearch__.search(
           Spree::Product::ElasticsearchQuery.new(q).to_hash
           )
-        search_result.limit(Spree::Config.products_per_page).page(page).records
+        if taxons.is_a?(Numeric) # Assume we are on a CLP(> 0 level) and will order products accordingly to spree_products_taxons
+          taxon = Spree::Taxon.find(taxons)
+          return ordered_search_result(taxon,search_result)
+        end
+        search_result.limit(Spree::Config.products_per_page).page(page)
       end
 
       def query_products        
@@ -56,6 +60,10 @@ module Spree
         search_result = Spree::Product.__elasticsearch__.search(
           Spree::Product::ElasticsearchQuery.new(q).to_query_hash
         )
+        if taxons.is_a?(Numeric) # Assume we are on a CLP(> 0 level) and will order products accordingly to spree_products_taxons
+          taxon = Spree::Taxon.find(taxons)
+          return ordered_search_result(taxon,search_result)
+        end
         search_result.limit(Spree::Config.products_per_page).page(page).records
       end
 
@@ -76,6 +84,19 @@ module Spree
         end
         @per_page = (params[:per_page].to_i <= 0) ? Spree::Config[:products_per_page] : params[:per_page].to_i
         @page = (params[:page].to_i <= 0) ? 1 : params[:page].to_i
+      end
+
+      private
+      def ordered_search_result(taxon,search_result)
+        # Shameful hack to get products listed in accordance to spree_products_taxons
+        if taxon and taxon.level > 0
+          products = Spree::Product.joins('INNER JOIN spree_products_taxons ON
+                                             spree_products_taxons.product_id = spree_products.id')
+                         .where('spree_products_taxons.taxon_id': taxon.id).order('spree_products_taxons.position asc')
+          products = products.limit(Spree::Config.products_per_page).page(page)
+          search_result.response['ordered_products'] = products
+          search_result
+        end
       end
     end
   end
