@@ -1,11 +1,29 @@
 module Spree
+  Classification.class_eval do
+    include Elasticsearch::Model
+    index_name Spree::ElasticsearchSettings.index
+    document_type 'spree_products_taxons'
+
+    mapping _parent: {type: 'spree_product'} do
+      indexes :position, type: 'integer'
+      indexes :taxon_id, type: 'integer'
+    end
+
+    def as_indexed_json(options={})
+      {taxon_id: taxon.id, position: position}.to_json
+    end
+  end
+
   Product.class_eval do
     include Elasticsearch::Model
-
     index_name Spree::ElasticsearchSettings.index
     document_type 'spree_product'
+<<<<<<< 57b99f56b917b56c2c6164dd713c9eaacff9c2e9
 
     mapping _all: { analyzer: 'nGram_analyzer', search_analyzer: 'whitespace_analyzer' } do
+=======
+    mapping _all: {'index_analyzer': 'nGram_analyzer', 'search_analyzer': 'whitespace_analyzer'} do
+>>>>>>> minor refactoring and formatting
       indexes :name, type: 'multi_field' do
         indexes :name, type: 'string', analyzer: 'snowball'
         indexes :untouched, type: 'string', include_in_all: false, index: 'not_analyzed'
@@ -29,9 +47,9 @@ module Spree
       taxons = Spree::Taxon.find(taxon_ids)
       selected_taxons = taxons.select{|t|t.depth > 0}
       if selected_taxons.any?
-        permalink = selected_taxons.sample.permalink || ""
+        permalink = selected_taxons.sample.permalink || ''
         unless permalink.blank?
-          permalink.upcase.gsub("/", " // ")
+          permalink.upcase.gsub('/', ' // ')
         end
       end
     end
