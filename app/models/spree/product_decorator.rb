@@ -109,8 +109,9 @@ module Spree
       attribute :price_max, Float
       attribute :properties, Hash
       attribute :query, String
-      attribute :taxons, Array
       attribute :root_taxon_ids, Array
+      attribute :taxons, Array
+      attribute :size, Integer
       attribute :browse_mode, Boolean
       attribute :available_by_max_no_days, Integer
       attribute :sorting, String
@@ -184,6 +185,7 @@ module Spree
           query: { filtered: {} },
           sort: sorting,
           from: from,
+          size: size,
           facets: facets
         }
 
@@ -191,8 +193,7 @@ module Spree
         result[:query][:filtered][:query] = query
         # taxon and property filters have an effect on the facets
         and_filter << { terms: { taxon_ids: taxons } } if not taxons.empty? and @root_taxon_ids.empty?
-        # Gift finder search
-        # and_filter << { terms: { root_taxon_ids: @root_taxon_ids } } unless @root_taxon_ids.empty?
+
         if available_by_max_no_days.nil?
           # only return products that are available
           and_filter << { range: { available_on: { lte: Date.today } } }
