@@ -119,8 +119,9 @@ module Spree
       attribute :price_max, Float
       attribute :properties, Hash
       attribute :query, String
-      attribute :taxons, Array
       attribute :root_taxon_ids, Array
+      attribute :taxons, Array
+      attribute :size, Integer
       attribute :browse_mode, Boolean
       attribute :available_by_max_no_days, Integer
       attribute :sorting, String
@@ -213,7 +214,12 @@ module Spree
           query: { filtered: {} },
           sort: sorting,
           from: from,
+<<<<<<< 56a6735f3de5fa01a9ae4b42d678a272f38b8caf
           aggregations: aggregations
+=======
+          size: size,
+          facets: facets
+>>>>>>> to enable sorting via spree_products_taxons we have to return the complete set
         }
 
         # add query and filters to filtered
@@ -229,6 +235,7 @@ module Spree
 =======
 =======
         and_filter << { terms: { taxon_ids: taxons } } if not taxons.empty? and @root_taxon_ids.empty?
+<<<<<<< 56a6735f3de5fa01a9ae4b42d678a272f38b8caf
         # Gift finder search
 <<<<<<< 1b298db7c26674123ed7d7e6db187eea4c054617
         and_filter << { terms: { root_taxon_ids: @root_taxon_ids } } unless @root_taxon_ids.empty?
@@ -236,6 +243,9 @@ module Spree
 =======
         # and_filter << { terms: { root_taxon_ids: @root_taxon_ids } } unless @root_taxon_ids.empty?
 >>>>>>> support for better term search
+=======
+
+>>>>>>> to enable sorting via spree_products_taxons we have to return the complete set
         if available_by_max_no_days.nil?
           # only return products that are available
           and_filter << { range: { available_on: { lte: Date.today } } }

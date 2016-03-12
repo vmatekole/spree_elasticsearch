@@ -23,13 +23,12 @@ module Spree
       end
 
       def retrieve_products(params = {})
-        from = (@page - 1) * Spree::Config.products_per_page
+        # from = (@page - 1) * Spree::Config.products_per_page
         q = {
           query: query,
           taxons: taxons,
           browse_mode: browse_mode,
-          from: from,
-          page: @page,
+          size: 10000,
           price_min: price_min,
           price_max: price_max,
           properties: properties,
@@ -39,7 +38,7 @@ module Spree
         search_result = Spree::Product.__elasticsearch__.search(
           Spree::Product::ElasticsearchQuery.new(q).to_hash
         )
-        search_result.limit(Spree::Config.products_per_page).page(page)
+        search_result
       end
 
       protected
