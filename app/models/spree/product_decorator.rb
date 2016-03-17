@@ -310,6 +310,7 @@ module Spree
           query: {filter:{}},
           sort: sorting,
           from: from,
+          size: size,
           facets: facets
         }
         # add query and filters to filtered
