@@ -36,16 +36,23 @@ module Spree
       indexes :name_suggest, type: 'completion', payloads:true
     end
 
-    def select_taxon_name(taxon_ids)
-      return nil unless taxon_ids
+    def taxon_info(taxon_ids)
+      return unless taxon_ids
       taxons = Spree::Taxon.find(taxon_ids)
-      selected_taxons = taxons.select{|t|t.depth > 0}
-      if selected_taxons.any?
-        permalink = selected_taxons.sample.permalink || ''
+      taxons = taxons.select{|t|t.depth > 0}
+      return unless taxons.any?
+      result = []
+      taxons.each do |t|
+        c = {}
+        permalink = t.permalink || ''
         unless permalink.blank?
-          permalink.upcase.gsub('/', ' // ')
+          t.permalink.upcase.gsub('/', ' // ')
+          c[:permalink] = t.permalink
+          c[:id] = t.id
         end
+        result.push(c)
       end
+      result
     end
 
     def tokenize_name(name)
@@ -78,25 +85,29 @@ module Spree
       })
       result[:price] = price
       result[:slug] = slug
-      result[:clp_image_url] = clp_image_url
+      result[:clp_image_url] = image_url(:clp_small)
       result[:hover_image_url] = hover_image_url
-      #result[:clp_hover_url] = clp_hover_url
       result[:properties] = property_list unless property_list.empty?
       result[:taxon_ids] = taxons.map(&:self_and_ancestors).flatten.uniq.map(&:id) unless taxons.empty?
       keywords = []
-      keywords = meta_keywords.split(/[\W+\s+\b]/)if meta_keywords
-      result[:name_suggest] = {
-            input: tokenize_name(name).append(keywords),
-            output: name,
-            payload: {
-              suggest: {
-                id: id,
-                name: name,
-                category: select_taxon_name(result[:taxon_ids]),
-                available_on: available_on
+      keywords = meta_keywords.split(/[\W+\s+\b]/) if meta_keywords
+      taxons  = taxon_info(result[:taxon_ids])
+
+      if taxons and taxons.any?  # we only index products with taxons associated
+        result[:name_suggest] = {
+              input: tokenize_name(name).append(keywords),
+              output: name,
+              payload: {
+                suggest: {
+                  id: id,
+                  name: name,
+                  available_on: available_on,
+                  image: image_url(:micro),
+                  taxons: taxons.map{|i| {name: i[:permalink], id: i[:id]}}
+                }
               }
-            }
         }
+      end
       result
     end
 
@@ -285,9 +296,9 @@ module Spree
       end
     end
 
-    def clp_image_url
+    def image_url(size)
       if images.size > 0
-        return images.first.attachment.url(:clp_small)
+        return images.first.attachment.url(size)
       end
     end
 
