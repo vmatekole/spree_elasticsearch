@@ -45,18 +45,18 @@ module Spree
     def taxon_info(taxon_ids)
       return unless taxon_ids
       taxons = Spree::Taxon.find(taxon_ids)
-      taxons = taxons.select{|t|t.depth > 0}
+      taxons = taxons.select{|t|t.depth == 1}
       return unless taxons.any?
       result = []
-      taxons.each do |t|
+      taxons.select(&:visible).each do |t|
         c = {}
         permalink = t.permalink || ''
-        unless permalink.blank?
-          t.permalink.upcase.gsub('/', ' // ')
-          c[:permalink] = t.permalink
+        next if  permalink.blank?
+        if permalink = t.permalink.split('/').second
+          c[:permalink] = permalink
           c[:id] = t.id
+          result.push(c)
         end
-        result.push(c)
       end
       result
     end
