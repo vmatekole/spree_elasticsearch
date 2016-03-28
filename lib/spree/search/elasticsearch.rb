@@ -29,7 +29,7 @@ module Spree
           taxons: taxons,
           from: from,
           browse_mode: browse_mode,
-          size: 1000,
+          size: 10000,
           price_min: price_min,
           price_max: price_max,
           properties: properties,
