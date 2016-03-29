@@ -18,12 +18,7 @@ module Spree
     include Elasticsearch::Model
     index_name Spree::ElasticsearchSettings.index
     document_type 'spree_product'
-<<<<<<< 57b99f56b917b56c2c6164dd713c9eaacff9c2e9
-
     mapping _all: { analyzer: 'nGram_analyzer', search_analyzer: 'whitespace_analyzer' } do
-=======
-    mapping _all: {'index_analyzer': 'nGram_analyzer', 'search_analyzer': 'whitespace_analyzer'} do
->>>>>>> minor refactoring and formatting
       indexes :name, type: 'multi_field' do
         indexes :name, type: 'string', analyzer: 'snowball'
         indexes :untouched, type: 'string', include_in_all: false, index: 'not_analyzed'
@@ -138,7 +133,7 @@ module Spree
       attribute :sorting, String
 
       # When browse_mode is enabled, the taxon filter is placed at top level. This causes the results to be limited, but facetting is done on the complete dataset.
-      # When browse_mode is disabled, the taxon filter is placed inside the filtered query. This causes the facets to be limited to the resulting set.
+      # When browse_mode is disabled, the taxon filter is placed inside the filtered query. This causes the aggregations to be limited to the resulting set.
 
       # Method that creates the actual query based on the current attributes.
       # The idea is to always to use the following schema and fill in the blanks.
@@ -178,8 +173,6 @@ module Spree
             and_filter << { terms: { properties: pair.map { |property| property.join('||') } } }
           end
         end
-<<<<<<< a77ea32eba2ac7890fbb6000bb4f91dac48ab322
-<<<<<<< 0aa8fbae9b4b80b191f36bb9a34c9a1f4c0c65cb
 
         sorting = case @sorting
         when 'name_asc'
@@ -192,22 +185,6 @@ module Spree
           [ { 'price' => { order: 'desc' } }, { 'name.untouched' => { order: 'asc' } }, '_score' ]
         when 'score'
           [ '_score', { 'name.untouched' => { order: 'asc' } }, { price: { order: 'asc' } } ]
-=======
-        sorting = case @sorting          
-=======
-        sorting = case @sorting
->>>>>>> finalisinh search suggestion funtionality
-        when "name_asc"
-          [ {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }}, "_score" ]
-        when "name_desc"
-          [ {"name.untouched" => { order: "desc" }}, {"price" => { order: "asc" }}, "_score" ]
-        when "price_asc"
-          [ {"price" => { order: "asc" }}, {"name.untouched" => { order: "asc" }}, "_score" ]
-        when "price_desc"
-          [ {"price" => { order: "desc" }}, {"name.untouched" => { order: "asc" }}, "_score" ]
-        when "score"
-          [ "_score", {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }} ]
->>>>>>> change analyzer for product name
         else
           [ { 'name.untouched' => { order: 'asc' } }, { price: { order: 'asc' } }, '_score' ]
         end
@@ -225,51 +202,22 @@ module Spree
           query: { filtered: {} },
           sort: sorting,
           from: from,
-<<<<<<< 56a6735f3de5fa01a9ae4b42d678a272f38b8caf
-          aggregations: aggregations
-=======
-          size: size,
-          facets: facets
->>>>>>> to enable sorting via spree_products_taxons we have to return the complete set
+          aggregations: aggregations,
+          size: size
         }
 
         # add query and filters to filtered
         result[:query][:filtered][:query] = query
-        # taxon and property filters have an effect on the facets
-<<<<<<< 0db22c69caa617cd060e928329fcbee0e9f45d34
+        # taxon and property filters have an effect on the aggregations
         and_filter << { terms: { taxon_ids: taxons } } unless taxons.empty?
-<<<<<<< e0b2992eb1d39abf315fcc5605f46c763b342509
         # only return products that are available
         #and_filter << { range: { available_on: { lte: "now" } }
         and_filter << { range: { available_on: { lte: 'now' } } }
         result[:query][:filtered][:filter] = { and: and_filter } unless and_filter.empty?
-=======
-=======
-        and_filter << { terms: { taxon_ids: taxons } } if not taxons.empty? and @root_taxon_ids.empty?
-<<<<<<< 56a6735f3de5fa01a9ae4b42d678a272f38b8caf
-        # Gift finder search
-<<<<<<< 1b298db7c26674123ed7d7e6db187eea4c054617
-        and_filter << { terms: { root_taxon_ids: @root_taxon_ids } } unless @root_taxon_ids.empty?
->>>>>>> support gift finder search
-=======
-        # and_filter << { terms: { root_taxon_ids: @root_taxon_ids } } unless @root_taxon_ids.empty?
->>>>>>> support for better term search
-=======
-
->>>>>>> to enable sorting via spree_products_taxons we have to return the complete set
-        if available_by_max_no_days.nil?
-          # only return products that are available
-          and_filter << { range: { available_on: { lte: Date.today } } }
-        else
-          # for the 'new' category we limit the display of products to those number of days
-          # configured @ configatron.frontend.homepage.available_by_max_no_days
-          and_filter << { range: { available_on: { lte: Date.today, gte: Date.today - available_by_max_no_days.days } } }
-        end
-
->>>>>>> changes to raneg query for 'new' category.
-        result[:query][:filtered][:filter] = { "and" => and_filter } unless and_filter.empty?
-
-        # add price filter outside the query because it should have no effect on facets
+        and_filter << { terms: { taxon_ids: taxons } } if not taxons.empty?
+        # only return products that are available
+        result[:query][:filtered][:filter] = { and: and_filter } unless and_filter.empty?
+        # add price filter outside the query because it should have no effect on aggregations
         if price_min && price_max && (price_min < price_max)
           result[:filter] = { range: { price: { gte: price_min, lte: price_max } } }
         end
@@ -308,8 +256,8 @@ module Spree
           [ {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }}, "_score" ]
         end
 
-        # facets
-        facets = {
+        # aggregations
+        aggregations = {
           price: { statistical: { field: "price" } },
           properties: { terms: { field: "properties", order: "count", size: 1000000 } },
           taxon_ids: { terms: { field: "taxon_ids", size: 1000000 } }
@@ -322,26 +270,21 @@ module Spree
           sort: sorting,
           from: from,
           size: size,
-          facets: facets
+          aggregations: aggregations
         }
+
         # add query and filters to filtered
         result[:query] = query
-        # taxon and property filters have an effect on the facets
+        # taxon and property filters have an effect on the aggregations
         and_filter << { terms: { taxon_ids: taxons } } if not taxons.empty?
         # Gift finder search
         # and_filter << { terms: { root_taxon_ids: @root_taxon_ids } } unless @root_taxon_ids.empty?
-        if available_by_max_no_days.nil?
-          # only return products that are available
-          and_filter << { range: { available_on: { lte: Date.today } } }
-        else
-          # for the 'new' category we limit the display of products to those number of days
-          # configured @ configatron.frontend.homepage.available_by_max_no_days
-          and_filter << { range: { available_on: { lte: Date.today, gte: Date.today - available_by_max_no_days.days } } }
-        end
+        # only return products that are available
+        and_filter << { range: { available_on: { lte: Date.today } } }
 
         result[:filter] = { "and" => and_filter } unless and_filter.empty?
 
-        # add price filter outside the query because it should have no effect on facets
+        # add price filter outside the query because it should have no effect on aggregations
         if price_min && price_max && (price_min < price_max)
           result[:filter] = { range: { price: { gte: price_min, lte: price_max } } }
         end
