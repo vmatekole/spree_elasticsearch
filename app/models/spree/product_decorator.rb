@@ -18,7 +18,7 @@ module Spree
     include Elasticsearch::Model
     index_name Spree::ElasticsearchSettings.index
     document_type 'spree_product'
-    mapping _all: { analyzer: 'nGram_analyzer', search_analyzer: 'whitespace_analyzer' } do
+    mapping _all: { analyzer: 'nGram_analyzer', search_analyzer: 'nGram_analyzer' } do
       indexes :name, type: 'multi_field' do
         indexes :name, type: 'string', analyzer: 'snowball'
         indexes :untouched, type: 'string', include_in_all: false, index: 'not_analyzed'
