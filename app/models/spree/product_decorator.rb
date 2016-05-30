@@ -48,7 +48,7 @@ module Spree
       taxons = taxons.select{|t|t.depth == 1}
       return unless taxons.any?
       result = []
-      taxons.select(&:visible).select{|t|t.taxonomy.name.downcase != :meta}.each do |t|
+      taxons.select{|t| t.visible && t.taxonomy.name.downcase != :meta}.each do |t|
         c = {}
         permalink = t.permalink || ''
         next if  permalink.blank?
