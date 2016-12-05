@@ -29,14 +29,11 @@ module Spree
           taxons: taxons,
           from: from,
           browse_mode: browse_mode,
-          size: 10000,
           price_min: price_min,
           price_max: price_max,
           properties: properties,
           sorting: sorting
-
         }
-        q[:available_by_max_no_of_days] = true if params.has_key?(:new_category)
         search_result = Spree::Product.__elasticsearch__.search(
           Spree::Product::ElasticsearchQuery.new(q).to_hash
         )

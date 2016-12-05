@@ -134,6 +134,8 @@ module Spree
       attribute :root_taxon_ids, Array
       attribute :taxons, Array
       attribute :size, Integer
+      attribute :per_page, String
+      attribute :page, String
       attribute :browse_mode, Boolean
       attribute :available_by_max_no_days, Integer
       attribute :sorting, String
@@ -208,8 +210,7 @@ module Spree
           query: { filtered: {} },
           sort: sorting,
           from: from,
-          aggregations: aggregations,
-          size: size
+          aggregations: aggregations
         }
 
         # add query and filters to filtered
