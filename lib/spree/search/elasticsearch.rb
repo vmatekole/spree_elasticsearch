@@ -27,7 +27,6 @@ module Spree
         q = {
           query: query,
           taxons: taxons,
-          from: from,
           browse_mode: browse_mode,
           price_min: price_min,
           price_max: price_max,
