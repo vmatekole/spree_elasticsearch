@@ -11,6 +11,7 @@ module Spree
       attribute :price_min, Float
       attribute :price_max, Float
       attribute :taxons, Array
+      attribute :facets, Array
       attribute :browse_mode, Boolean, default: true
       attribute :properties, Hash
       attribute :per_page, String
@@ -27,6 +28,7 @@ module Spree
         q = {
           query: query,
           taxons: taxons,
+          facets: facets,
           browse_mode: browse_mode,
           price_min: price_min,
           price_max: price_max,
@@ -46,6 +48,7 @@ module Spree
         @query = params[:keywords]
         @sorting = params[:sorting]
         @taxons = params[:taxon] unless params[:taxon].nil?
+        @facets = params[:facets] unless params[:facets].nil?
         @browse_mode = params[:browse_mode] unless params[:browse_mode].nil?
         if params[:search] && params[:search][:price]
           # price

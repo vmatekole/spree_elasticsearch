@@ -24,8 +24,8 @@ module Spree
         indexes :untouched, type: 'string', include_in_all: false, index: 'not_analyzed'
       end
 
-      indexes :description, type: 'string', analyzer: 'snowball'
-      indexes :taxon_names, type: 'string', analyzer: 'snowball'
+        indexes :description, type: 'string', analyzer: 'snowball'
+        indexes :taxon_names, type: 'string', analyzer: 'snowball'
       indexes :available_on, type: 'date', format: 'dateOptionalTime', include_in_all: false
       indexes :price, type: 'double'
       indexes :sku, type: 'string', index: 'not_analyzed'
@@ -133,13 +133,13 @@ module Spree
       attribute :query, String
       attribute :root_taxon_ids, Array
       attribute :taxons, Array
+      attribute :facets, Array
       attribute :size, Integer
       attribute :per_page, String
       attribute :page, String
       attribute :browse_mode, Boolean
       attribute :available_by_max_no_days, Integer
       attribute :sorting, String
-
       # When browse_mode is enabled, the taxon filter is placed at top level. This causes the results to be limited, but facetting is done on the complete dataset.
       # When browse_mode is disabled, the taxon filter is placed inside the filtered query. This causes the aggregations to be limited to the resulting set.
 
@@ -164,38 +164,13 @@ module Spree
       #   from: ,
       #   aggregations:
       # }
+
       def to_hash
-        q = { match_all: {} }
+        q =  { bool: { must: []} }
         unless query.blank? # nil or empty
           q = { query_string: { query: query, fields: ['name^5','description','sku', 'taxon_names'], default_operator: 'AND', use_dis_max: true } }
         end
         query = q
-
-        and_filter = []
-        unless @properties.nil? || @properties.empty?
-          # transform properties from [{"key1" => ["value_a","value_b"]},{"key2" => ["value_a"]}
-          # to { terms: { properties: ["key1||value_a","key1||value_b"] }
-          #    { terms: { properties: ["key2||value_a"] }
-          # This enforces "and" relation between different property values and "or" relation between same property values
-          properties = @properties.map{ |key, value| [key].product(value) }.map do |pair|
-            and_filter << { terms: { properties: pair.map { |property| property.join('||') } } }
-          end
-        end
-
-        sorting = case @sorting
-        when 'name_asc'
-          [ { 'name.untouched' => { order: 'asc' } }, { price: { order: 'asc' } }, '_score' ]
-        when 'name_desc'
-          [ { 'name.untouched' => { order: 'desc' } }, { price: { order: 'asc' } }, '_score' ]
-        when 'price_asc'
-          [ { 'price' => { order: 'asc' } }, { 'name.untouched' => { order: 'asc' } }, '_score' ]
-        when 'price_desc'
-          [ { 'price' => { order: 'desc' } }, { 'name.untouched' => { order: 'asc' } }, '_score' ]
-        when 'score'
-          [ '_score', { 'name.untouched' => { order: 'asc' } }, { price: { order: 'asc' } } ]
-        else
-          [ { 'name.untouched' => { order: 'asc' } }, { price: { order: 'asc' } }, '_score' ]
-        end
 
         # aggregations
         aggregations = {
@@ -204,30 +179,50 @@ module Spree
           taxon_ids: { terms: { field: 'taxon_ids', size: 1000000 } }
         }
 
+        sorting = case @sorting
+        when "name_asc"
+          [ {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }}, "_score" ]
+        when "name_desc"
+          [ {"name.untouched" => { order: "desc" }}, {"price" => { order: "asc" }}, "_score" ]
+        when "price_asc"
+          [ {"price" => { order: "asc" }}, {"name.untouched" => { order: "asc" }}, "_score" ]
+        when "price_desc"
+          [ {"price" => { order: "desc" }}, {"name.untouched" => { order: "asc" }}, "_score" ]
+        when "score"
+          [ "_score", {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }} ]
+        else
+          [ {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }}, "_score" ]
+        end
+
         # basic skeleton
         result = {
-          min_score: 0.03,
-          query: { filtered: {} },
+          query: {},
+          filter: { and: []},
           sort: sorting,
           from: from,
+          size: size,
           aggregations: aggregations
         }
-
         # add query and filters to filtered
-        result[:query][:filtered][:query] = query
-        # taxon and property filters have an effect on the aggregations
-        # and_filter << { terms: { taxon_ids: taxons } } unless taxons.empty?
-        # only return products that are available
-        #and_filter << { range: { available_on: { lte: "now" } }
-        and_filter << { range: { available_on: { lte: 'now' } } }
-        result[:query][:filtered][:filter] = { and: and_filter } unless and_filter.empty?
-        and_filter << { terms: { taxon_ids: taxons } } if not taxons.empty?
-        # only return products that are available
-        result[:query][:filtered][:filter] = { and: and_filter } unless and_filter.empty?
-        # add price filter outside the query because it should have no effect on aggregations
-        # if price_min && price_max && (price_min < price_max)
-        #   result[:filter] = { range: { price: { gte: price_min, lte: price_max } } }
-        # end
+        result[:query] = query
+        result[:query][:bool][:must].push({terms: { taxon_ids: taxons } })
+        prepareGroup = lambda do |g|
+          terms = {
+            terms: {taxon_ids: []}
+          }
+          g[:taxons].each { |id|
+            terms[:terms][:taxon_ids] << id
+          }
+          terms
+        end
+        result[:query][:bool][:must].push({ bool: {must: []} })
+        facets.each { |g|
+          if g[:taxons].any?
+            result[:query][:bool][:must][1][:bool][:must] << {bool: { should: prepareGroup.call(g)}}
+          end
+        }
+        result[:filter][:and] << { range: { price: { gte: price_min, lte: price_max } } }
+        result[:filter][:and] << { range: { available_on: { lte: Date.today } } }
         result
       end
 
