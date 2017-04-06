@@ -24,7 +24,6 @@ module Spree
       end
 
       def retrieve_products(params = {})
-        from = (@page - 1) * Spree::Config.products_per_page
         q = {
           query: query,
           taxons: taxons,
@@ -50,13 +49,9 @@ module Spree
         @taxons = params[:taxon] unless params[:taxon].nil?
         @facets = params[:facets] unless params[:facets].nil?
         @browse_mode = params[:browse_mode] unless params[:browse_mode].nil?
-        if params[:search] && params[:search][:price]
           # price
-          @price_min = params[:search][:price][:min].to_f
-          @price_max = params[:search][:price][:max].to_f
-          # properties
-          @properties = params[:search][:properties]
-        end
+        @price_min = params[:price_min].to_f
+        @price_max = params[:price_max].to_f
         @per_page = (params[:per_page].to_i <= 0) ? Spree::Config[:products_per_page] : params[:per_page].to_i
         @page = (params[:page].to_i <= 0) ? 1 : params[:page].to_i
       end

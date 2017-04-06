@@ -167,10 +167,6 @@ module Spree
 
       def to_hash
         q =  { bool: { must: []} }
-        unless query.blank? # nil or empty
-          q = { query_string: { query: query, fields: ['name^5','description','sku', 'taxon_names'], default_operator: 'AND', use_dis_max: true } }
-        end
-        query = q
 
         # aggregations
         aggregations = {
@@ -204,8 +200,14 @@ module Spree
           aggregations: aggregations
         }
         # add query and filters to filtered
-        result[:query] = query
-        result[:query][:bool][:must].push({terms: { taxon_ids: taxons } })
+        result[:query] = q
+
+        unless query.blank? # nil or empty
+          result[:query][:bool][:must].push( query_string: { query: query, fields: ['name^5','description','sku', 'taxon_names'], default_operator: 'AND', use_dis_max: true } )
+        else
+          result[:query][:bool][:must].push( { terms: { taxon_ids: taxons } } )
+        end
+
         prepareGroup = lambda do |g|
           terms = {
             terms: {taxon_ids: []}
@@ -216,12 +218,15 @@ module Spree
           terms
         end
         result[:query][:bool][:must].push({ bool: {must: []} })
+
         facets.each { |g|
           if g[:taxons].any?
             result[:query][:bool][:must][1][:bool][:must] << {bool: { should: prepareGroup.call(g)}}
           end
         }
-        result[:filter][:and] << { range: { price: { gte: price_min, lte: price_max } } }
+        if price_min >= 0.0 and price_max > 0.0
+          result[:filter][:and] << { range: { price: { gte: price_min, lte: price_max } } }
+        end
         result[:filter][:and] << { range: { available_on: { lte: Date.today } } }
         result
       end
