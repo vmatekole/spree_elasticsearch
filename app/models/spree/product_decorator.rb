@@ -127,8 +127,8 @@ module Spree
       include ::Virtus.model
 
       attribute :from, Integer, default: 0
-      attribute :price_min, Float
-      attribute :price_max, Float
+      attribute :price_min, Float, default: 0.00
+      attribute :price_max, Float, default: 100000.00
       attribute :properties, Hash
       attribute :query, String
       attribute :root_taxon_ids, Array
@@ -171,32 +171,12 @@ module Spree
         # aggregations
         aggregations = {
           price: { stats: { field: 'price' } },
-          properties: { terms: { field: 'properties', order: { _count: 'asc' }, size: 1000000 } },
           taxon_ids: { terms: { field: 'taxon_ids', size: 1000000 } }
         }
-
-        sorting = case @sorting
-        when "name_asc"
-          [ {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }}, "_score" ]
-        when "name_desc"
-          [ {"name.untouched" => { order: "desc" }}, {"price" => { order: "asc" }}, "_score" ]
-        when "price_asc"
-          [ {"price" => { order: "asc" }}, {"name.untouched" => { order: "asc" }}, "_score" ]
-        when "price_desc"
-          [ {"price" => { order: "desc" }}, {"name.untouched" => { order: "asc" }}, "_score" ]
-        when "score"
-          [ "_score", {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }} ]
-        else
-          [ {"name.untouched" => { order: "asc" }}, {"price" => { order: "asc" }}, "_score" ]
-        end
 
         # basic skeleton
         result = {
           query: {},
-          filter: { and: []},
-          sort: sorting,
-          from: from,
-          size: size,
           aggregations: aggregations
         }
         # add query and filters to filtered
@@ -207,6 +187,8 @@ module Spree
         else
           result[:query][:bool][:must].push( { terms: { taxon_ids: taxons } } )
         end
+        max_price =  (price_max.nil? or price_max <= 0.00) ? 10000 : price_max
+        result[:query][:bool][:must] << { range: { price: { gte: price_min, lte: max_price } } }
 
         prepareGroup = lambda do |g|
           terms = {
@@ -218,16 +200,11 @@ module Spree
           terms
         end
         result[:query][:bool][:must].push({ bool: {must: []} })
-
         facets.each { |g|
           if g[:taxons].any?
-            result[:query][:bool][:must][1][:bool][:must] << {bool: { should: prepareGroup.call(g)}}
+            result[:query][:bool][:must] << {bool: { should: prepareGroup.call(g)}}
           end
         }
-        if price_min >= 0.0 and price_max > 0.0
-          result[:filter][:and] << { range: { price: { gte: price_min, lte: price_max } } }
-        end
-        result[:filter][:and] << { range: { available_on: { lte: Date.today } } }
         result
       end
 

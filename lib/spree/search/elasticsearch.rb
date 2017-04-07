@@ -8,8 +8,8 @@ module Spree
       include ::Virtus.model
 
       attribute :query, String
-      attribute :price_min, Float
-      attribute :price_max, Float
+      attribute :price_min, Float, default: 0.00
+      attribute :price_max, Float, default: 100000
       attribute :taxons, Array
       attribute :facets, Array
       attribute :browse_mode, Boolean, default: true
@@ -47,9 +47,9 @@ module Spree
         @query = params[:keywords]
         @sorting = params[:sorting]
         @taxons = params[:taxon] unless params[:taxon].nil?
-        @facets = params[:facets] unless params[:facets].nil?
+        @facets = params[:groups] unless params[:groups].nil?
         @browse_mode = params[:browse_mode] unless params[:browse_mode].nil?
-          # price
+        # price
         @price_min = params[:price_min].to_f
         @price_max = params[:price_max].to_f
         @per_page = (params[:per_page].to_i <= 0) ? Spree::Config[:products_per_page] : params[:per_page].to_i
