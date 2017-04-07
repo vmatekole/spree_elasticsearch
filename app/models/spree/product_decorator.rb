@@ -189,6 +189,7 @@ module Spree
         end
         max_price =  (price_max.nil? or price_max <= 0.00) ? 10000 : price_max
         result[:query][:bool][:must] << { range: { price: { gte: price_min, lte: max_price } } }
+        result[:query][:bool][:must] << { range: { available_on: { lte: Date.today() } } }
 
         prepareGroup = lambda do |g|
           terms = {
