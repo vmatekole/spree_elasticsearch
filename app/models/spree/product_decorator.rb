@@ -173,9 +173,9 @@ module Spree
           price: { stats: { field: 'price' } },
           taxon_ids: { terms: { field: 'taxon_ids', size: 1000000 } }
         }
-
         # basic skeleton
         result = {
+          min_score: 0.2,
           query: {},
           aggregations: aggregations
         }
